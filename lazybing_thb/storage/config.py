@@ -15,6 +15,7 @@ class PermissionRequirements(Serializable):
     reload: int = 3
 
     tpa: int = 0
+    tpo: int = 0
     home: int = 0
     back: int = 0
 
@@ -23,6 +24,7 @@ class CommandPrefix(Serializable):
     home: PrefixType = "!!home"
     tpa: PrefixType = "!!tpa"
     tpc: PrefixType = "!!tpc"
+    tpo: PrefixType = "!!tpo"
     back: PrefixType = "!!back"
 
     @property
@@ -40,6 +42,10 @@ class CommandPrefix(Serializable):
     @property
     def back_(self) -> List[str]:
         return [self.back] if isinstance(self.back, str) else self.back
+    
+    @property
+    def tpo_(self) -> List[str]:
+        return [self.tpo] if isinstance(self.tpo, str) else self.tpo
 
     @property
     def help_message_prefix(self):

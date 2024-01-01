@@ -5,7 +5,9 @@ lazybing_thb:
       text: |
         §7-----§r {name} v{ver} §7-----§r
         适用于 MCDReforged 的 TPA/Home/Back 插件
-        §7{home_prefix}§r 显示该帮助信息
+        §7{home_prefix} help§r 显示该帮助信息
+        §7{home_prefix} default §e<门牌号>§r 设置默认家
+        §7{home_prefix}§r 传送回默认家
         §7{home_prefix} reload§r 重载插件
         §7{home_prefix} list§r 显示你所有的家
         §7{home_prefix} §e<门牌号>§r 传送到指定的家
@@ -14,6 +16,7 @@ lazybing_thb:
         §7{tpa_prefix}§r 同意传送请求
         §7{tpa_prefix} §6<玩家>§r 对§6<玩家>§r发出传送请求
         §7{tpc_prefix}§r 拒绝传送请求
+        §7{tpo_prefix}§r §6<玩家>§r 直接传送到某玩家身边
         §7{back_prefix}§r 撤销上次传送(本插件限定)
       hover: 点击以补全指令 {}
 
@@ -56,6 +59,9 @@ lazybing_thb:
     added_home_site: 成功记录了新家 §b§l{}§r (已使用槽位 §e{}§7/§6{}§r)
     home_site_not_exists: 你没有任何一个家叫这个 "{}"
     home_site_removed: 成功移除了家 §b§l{}§r (已使用槽位 §e{}§7/§6{}§r)
+
+    default_home_success: 成功设置了默认家 §b§l{}§r
+    default_not_exist: 默认家不存在
 
   back:
     expire_warn:

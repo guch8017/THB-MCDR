@@ -10,6 +10,9 @@ from lazybing_thb.utils import logger
 
 
 class PlayerHomeStorage(AbstractPlayerStorage):
+
+    DEFAULT_HOME_KEY = '__default__'
+
     expected_type = Dict[str, Location]
 
     def __init__(self, player: str):
@@ -61,9 +64,15 @@ class PlayerHomeStorage(AbstractPlayerStorage):
     def set_home(self, home_name: str, home_coordinates: Location) -> bool:
         with self.lock():
             data = self.get_data()
+            if home_name == PlayerHomeStorage.DEFAULT_HOME_KEY:
+                # 不能使用默认家的名字
+                return False
             if home_name in data.keys():
                 return False
             data[home_name] = home_coordinates
+            if len(data) == 1:
+                # 第一个家，设置为默认
+                data[PlayerHomeStorage.DEFAULT_HOME_KEY] = home_name
             self.save()
             return True
 
@@ -73,5 +82,37 @@ class PlayerHomeStorage(AbstractPlayerStorage):
             if home_name not in data.keys():
                 return False
             del data[home_name]
+            if data.get(PlayerHomeStorage.DEFAULT_HOME_KEY) == home_name:
+                del data[PlayerHomeStorage.DEFAULT_HOME_KEY]
             self.save()
             return True
+        
+    def set_default(self, home_name: str) -> bool:
+        """
+        将<home_name>设置为默认家
+        """
+        with self.lock():
+            data = self.get_data()
+            if home_name not in data.keys():
+                # 不存在指定点位，失败
+                return False
+            data[PlayerHomeStorage.DEFAULT_HOME_KEY] = home_name
+            self.save()
+            return True
+        
+    def get_default(self, default: Optional[Location] = None) -> Location:
+        """
+        返回设置的默认家
+        """
+        with self.lock():
+            data = self.get_data()
+            default_home_name = data.get(PlayerHomeStorage.DEFAULT_HOME_KEY)
+            if default_home_name is None:
+                # 未设置默认家
+                return default
+            loc = data.get(default_home_name)
+            if loc is None:
+                # 防止意外情况
+                return default
+            return loc
+            

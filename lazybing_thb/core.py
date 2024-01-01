@@ -24,6 +24,7 @@ def show_help(source: CommandSource):
             home_prefix=config.command_prefix.home_[0],
             tpa_prefix=config.command_prefix.tpa_[0],
             tpc_prefix=config.command_prefix.tpc_[0],
+            tpo_prefix=config.command_prefix.tpo_[0],
             back_prefix=config.command_prefix.back_[0],
             name=meta.name,
             ver=str(meta.version)
@@ -44,6 +45,53 @@ def get_current_requester(target: str):
         requester = timer.get_requester()
         timer.remove()
     return requester
+
+
+# !!tpo <player>
+@named_thread
+def teleport_other(source: PlayerCommandSource, target: str):
+    """
+    直接传送到他人身边
+    """
+    if source.player == target:
+        return source.reply(rtr('tpa.urself').set_color(RColor.red))
+    player_component = RText(target, RColor.yellow)
+    if not PlayerOnlineList.get_instance().is_online(target):
+        return source.reply(rtr('teleport.not_online', player_component).set_color(RColor.red))
+    requester: str = source.player
+    if config.teleport_delay >= 1:
+        psi.tell(requester, rtr('tpa.countdown', str(config.teleport_delay)))
+        for count in range(1, config.teleport_delay):
+            time.sleep(1)
+            psi.tell(requester, rtr('tpa.countdown', str(config.teleport_delay - count)))
+        time.sleep(1)
+    teleport_to_player(requester, target)
+
+
+# !!home default <home_site>
+def set_default_home(source: PlayerCommandSource, home_site_name: str):
+    """
+    设置默认家
+    """
+    home = PlayerHomeStorage.get_instance(source.player)
+    with home.lock():
+        added = home.set_default(home_site_name)
+    if not added:
+        return source.reply(rtr('home.home_site_not_exists', home_site_name).set_color(RColor.red))
+    source.reply(rtr('home.default_home_success', home_site_name))
+
+
+# !!home
+def go_default_home(source: PlayerCommandSource):
+    """
+    传送回默认家
+    """
+    home = PlayerHomeStorage.get_instance(source.player)
+    with home.lock():
+        site_location = home.get_default()
+    if site_location is None:
+        return source.reply(rtr('home.default_not_exist').set_color(RColor.red))
+    teleport_to_location(source.player, site_location)
 
 
 # !!tpa
@@ -182,9 +230,14 @@ def undo_teleport(source: PlayerCommandSource):
 
 
 def register_command():
+    home_site_name = "home_site"
+
     tpa_root = Literal(config.command_prefix.tpa_).runs(accept_teleport_request)
     tpc_root = Literal(config.command_prefix.tpc_).runs(decline_teleport_request)
-    home_root = Literal(config.command_prefix.home_).runs(show_help)
+    tpo_root = Literal(config.command_prefix.tpo_). \
+        then(QuotableText(home_site_name). \
+             runs(lambda src, ctx: teleport_other(src, ctx[home_site_name])))
+    home_root = Literal(config.command_prefix.home_).runs(go_default_home)
     back_root = Literal(config.command_prefix.back_).runs(undo_teleport).requires(
         lambda src: src.has_permission(config.permission_requirements.back))
 
@@ -199,7 +252,7 @@ def register_command():
     )
 
     # !!home
-    home_site_name = "home_site"
+    home_root.then(Literal('help')).runs(show_help)
     home_root.then(
         Literal('reload').requires(
             lambda src: src.has_permission(config.permission_requirements.reload)
@@ -221,11 +274,17 @@ def register_command():
             )
         )
     ).then(
+        Literal('default').then(
+            QuotableText(home_site_name).runs(
+                lambda src, ctx: set_default_home(src, ctx[home_site_name])
+            )
+        )
+    ).then(
         QuotableText(home_site_name).runs(
             lambda src, ctx: teleport_to_home(src, ctx[home_site_name])
         )
     )
 
-    for item in (tpa_root, tpc_root, home_root, back_root):
+    for item in (tpa_root, tpc_root, tpo_root, home_root, back_root):
         item.requires(lambda src: isinstance(src, PlayerCommandSource))
         psi.register_command(item)
