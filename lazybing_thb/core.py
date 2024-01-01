@@ -252,8 +252,9 @@ def register_command():
     )
 
     # !!home
-    home_root.then(Literal('help')).runs(show_help)
     home_root.then(
+        Literal('help').runs(show_help)
+    ).then(
         Literal('reload').requires(
             lambda src: src.has_permission(config.permission_requirements.reload)
         ).runs(
