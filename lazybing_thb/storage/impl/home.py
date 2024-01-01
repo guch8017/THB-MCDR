@@ -1,6 +1,6 @@
 import json
 import os.path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from mcdreforged.api.utils import serialize, deserialize
 
@@ -13,7 +13,7 @@ class PlayerHomeStorage(AbstractPlayerStorage):
 
     DEFAULT_HOME_KEY = '__default__'
 
-    expected_type = Dict[str, Location]
+    expected_type = Dict[str, Union[Location, str]]
 
     def __init__(self, player: str):
         super().__init__(player)
