@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, Dict
 
 from mcdreforged.api.command import *
 from mcdreforged.api.rtext import *
@@ -13,6 +13,12 @@ from lazybing_thb.teleport import teleport_to_player, teleport_to_location
 from lazybing_thb.timer import RequestTimer
 from lazybing_thb.utils import rtr, htr, psi, named_thread
 from lazybing_thb.player_list import PlayerOnlineList
+
+
+def get_home_length(list: dict) -> int:
+    if PlayerHomeStorage.DEFAULT_HOME_KEY in list:
+        return len(list) - 1
+    return len(list)
 
 
 def show_help(source: CommandSource):
@@ -155,11 +161,13 @@ def request_teleport(source: PlayerCommandSource, target: str):
 def list_home(source: PlayerCommandSource):
     home_list = PlayerHomeStorage.get_instance(source.player).get_data()
     component_list = [
-        rtr('home.list_home_title', count=len(home_list), max_=config.max_home_count)
+        rtr('home.list_home_title', count=get_home_length(home_list), max_=config.max_home_count)
     ]
     num = 1
     is_dark = False
     for name, home_site in home_list.items():
+        if name == PlayerHomeStorage.DEFAULT_HOME_KEY:
+            continue
         component_list.append(
             RTextList(
                 f'[§7{num}§r] ',
@@ -184,13 +192,13 @@ def add_home(source: PlayerCommandSource, home_site_name: str):
     player_location = Location.get_location(source.player)
     with home.lock():
         home_list = home.get_data()
-        amount = len(home_list)
+        amount = get_home_length(home_list)
         if config.is_reached_max_home_amount(amount):
             return source.reply(rtr('home.reached_max_amount', config.max_home_count).set_color(RColor.red))
         added = home.set_home(home_site_name, player_location)
     if not added:
         return source.reply(rtr('home.home_site_exists', home_site_name).set_color(RColor.red))
-    source.reply(rtr('home.added_home_site', home_site_name, len(home_list), config.max_home_count))
+    source.reply(rtr('home.added_home_site', home_site_name, get_home_length(home_list), config.max_home_count))
 
 
 # !!home remove/rm <home_site>
@@ -200,7 +208,7 @@ def remove_home(source: PlayerCommandSource, home_site_name: str):
         removed = home.remove_home(home_site_name)
         if not removed:
             return source.reply(rtr('home.home_site_not_exists', home_site_name).set_color(RColor.red))
-        amount = len(home.get_data())
+        amount = get_home_length(home.get_data())
     source.reply(rtr('home.home_site_removed', home_site_name, amount, config.max_home_count))
 
 
